@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>FEAST OR FAINT V2</title>
+<title>FEAST OR FAINT V3 - FACE TO FACE</title>
 <style>
     * { margin:0; padding:0; box-sizing:border-box; touch-action:manipulation; }
   body {
@@ -14,46 +15,50 @@
   #game { display:flex; flex-direction:column; height:100vh; padding:8px; gap:6px; }
 
   /* TREASURE BOXES */
- .treasure-row { display:flex; justify-content:space-between; gap:8px; }
- .treasure {
+.treasure-row { display:flex; justify-content:space-between; gap:8px; }
+.treasure {
     flex:1; padding:8px; border-radius:12px; text-align:center;
     border:3px solid; font-size:12px; font-weight:bold;
     box-shadow: 0 4px 10px rgba(0,0,0,0.5);
   }
   #playerBox { background: linear-gradient(135deg, #FFD700, #FFF8DC); color:#000; border-color:#FFD700; }
   #cpuBox { background: linear-gradient(135deg, #C0C0C0, #2F2F2F); color:#FFF; border-color:#C0C0C0; }
- .treasure.count { font-size:20px; margin-top:2px; }
+.treasure.count { font-size:20px; margin-top:2px; }
 
   /* BOARD */
   #board { flex:1; display:flex; flex-direction:column; gap:4px; }
- .row { display:flex; gap:4px; align-items:center; }
- .label { width:40px; font-size:14px; text-align:center; font-weight:bold; color:#FFD700; }
- .tile {
+.row { display:flex; gap:4px; align-items:center; }
+.label { width:40px; font-size:14px; text-align:center; font-weight:bold; color:#FFD700; }
+.tile {
     flex:1; aspect-ratio:1; border-radius:6px;
     background:#8B4513; border:2px solid #5a2e0c;
     display:flex; align-items:center; justify-content:center;
     position:relative;
   }
- .tile.feastfaint {
-    background: linear-gradient(90deg, #00FF00 50%, #FF0000 50%);
-    border:3px solid #FFD700;
+  /* CENTER BATTLE LINE */
+.tile.battleline {
+    background: linear-gradient(180deg, #00FF00 50%, #FF0000 50%);
+    border:3px solid #FFD700; box-shadow: 0 0 10px #FFD700;
   }
- .seed {
+.seed {
     width:70%; height:70%; border-radius:50%;
-    background: radial-gradient(circle at 30% 30%, #FFA500, #FF4500);
     border:2px solid #000; box-shadow: inset 0 -3px 5px rgba(0,0,0,0.4);
     position:absolute; transition: all 0.4s ease;
   }
+  /* Player seeds orange, start bottom */
+.seed.player { background: radial-gradient(circle at 30% 30%, #FFA500, #FF4500); }
+  /* CPU seeds blue, start top */
+.seed.cpu { background: radial-gradient(circle at 30% 30%, #87CEEB, #1E90FF); }
 
   /* DICE AREA */
   #diceArea { display:flex; justify-content:space-around; padding:8px 0; gap:6px; }
- .dice {
+.dice {
     width:70px; height:70px; background:white; color:#000; border-radius:12px;
     display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:bold;
     border:3px solid #444; cursor:pointer; box-shadow:0 4px 8px rgba(0,0,0,0.6);
     transition: transform 0.6s;
   }
- .dice.rolling { animation: roll 0.6s; }
+.dice.rolling { animation: roll 0.6s; }
   @keyframes roll { 0%{transform:rotate(0)} 100%{transform:rotate(720deg)} }
 
   #info { text-align:center; font-size:14px; padding:4px; background:rgba(0,0,0,0.4); border-radius:8px; }
@@ -66,11 +71,13 @@
 </head>
 <body>
 <div id="game">
+  <!-- CPU BOX ON TOP -->
   <div class="treasure-row">
-    <div class="treasure" id="playerBox">YOUR BOX<br><div class="count">0</div></div>
     <div class="treasure" id="cpuBox">CPU BOX<br><div class="count">0</div></div>
+    <div class="treasure" id="playerBox">YOUR BOX<br><div class="count">0</div></div>
   </div>
 
+  <!-- SHARED BOARD -->
   <div id="board"></div>
 
   <div id="info">Roll Seed Selector to start</div>
@@ -83,7 +90,6 @@
   </div>
 </div>
 
-<!-- Simple sounds using WebAudio -->
 <script>
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 function beep(f, t=0.1){ const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.frequency.value=f; o.connect(g); g.connect(audioCtx.destination); g.gain.setValueAtTime(0.2, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + t); o.start(); o.stop(audioCtx.currentTime + t); }
@@ -91,30 +97,41 @@ function beep(f, t=0.1){ const o=audioCtx.createOscillator(), g=audioCtx.createG
 const SEEDS = ['A1','A2','B3','C4','D5','E6'];
 const MOVE_FACES = [1,1,2,2,3,'X'];
 const FEAST_FACES = ['+','+','+','-','-','-'];
+const BOARD_SIZE = 7; // 0 to 6. Row 3 is center
 
-let boardState = {}; // {A1:0, A2:0...} position 0-6
+let boardState = {player:{}, cpu:{}}; // {A1:6, A2:5...} position 0-6
 let feasted = {player:0, cpu:0};
 let gameOver = false;
-let turn = 'player'; // player or cpu
-let phase = 'seed'; // seed, move, battle
+let turn = 'player';
+let phase = 'seed';
 let selectedSeed = null;
-let battleOwner = null;
 
 const board = document.getElementById('board');
 const info = document.getElementById('info');
 const rollBtn = document.getElementById('rollBtn');
 
-// BUILD BOARD
+// BUILD 1 SHARED BOARD
 SEEDS.forEach(seed => {
-  boardState[seed] = 0;
+  boardState.player[seed] = BOARD_SIZE - 1; // Player starts at bottom row 6
+  boardState.cpu[seed] = 0; // CPU starts at top row 0
+
   const row = document.createElement('div'); row.className='row';
   const label = document.createElement('div'); label.className='label'; label.textContent=seed;
   row.appendChild(label);
-  for(let i=0; i<7; i++){
-    const tile = document.createElement('div'); tile.className='tile'; tile.id=`${seed}-${i}`;
-    if(i===6) tile.classList.add('feastfaint');
-    if(i===0){
-      const s = document.createElement('div'); s.className='seed'; s.id=`seed-${seed}`;
+
+  for(let i=0; i<BOARD_SIZE; i++){
+    const tile = document.createElement('div');
+    tile.className='tile';
+    tile.id=`${seed}-${i}`;
+    if(i === Math.floor(BOARD_SIZE/2)) tile.classList.add('battleline'); // center row 3
+
+    // Place seeds
+    if(i === 0){
+      const s = document.createElement('div'); s.className='seed cpu'; s.id=`seed-cpu-${seed}`;
+      tile.appendChild(s);
+    }
+    if(i === BOARD_SIZE - 1){
+      const s = document.createElement('div'); s.className='seed player'; s.id=`seed-player-${seed}`;
       tile.appendChild(s);
     }
     row.appendChild(tile);
@@ -127,9 +144,7 @@ function updateTreasure(){
   document.querySelector('#cpuBox.count').textContent = feasted.cpu;
 }
 
-function rollDice(faces){
-  return faces[Math.floor(Math.random()*faces.length)];
-}
+function rollDice(faces){ return faces[Math.floor(Math.random()*faces.length)]; }
 
 function animateDice(el, result){
   el.classList.add('rolling');
@@ -137,75 +152,90 @@ function animateDice(el, result){
   setTimeout(()=>{ el.textContent = result; el.classList.remove('rolling'); }, 600);
 }
 
-function moveSeed(seed, steps){
+function moveSeed(owner, seed, steps){
   if(steps==='X') return;
-  boardState[seed] += steps;
-  if(boardState[seed] > 6) boardState[seed] = 6;
-  const tile = document.getElementById(`${seed}-${boardState[seed]}`);
-  const seedEl = document.getElementById(`seed-${seed}`);
+
+  // Player moves UP, CPU moves DOWN
+  if(owner==='player') boardState.player[seed] -= steps;
+  else boardState.cpu[seed] += steps;
+
+  // Clamp to board
+  boardState.player[seed] = Math.max(0, boardState.player[seed]);
+  boardState.cpu[seed] = Math.min(BOARD_SIZE-1, boardState.cpu[seed]);
+
+  const pos = boardState[owner][seed];
+  const tile = document.getElementById(`${seed}-${pos}`);
+  const seedEl = document.getElementById(`seed-${owner}-${seed}`);
   tile.appendChild(seedEl);
   beep(500, 0.05);
+
+  // Check if reached center battle line
+  if(pos === Math.floor(BOARD_SIZE/2)) doBattle(owner, seed);
 }
 
-function startBattle(seed){
-  phase='battle'; battleOwner=turn; info.textContent=`BATTLE! ${seed} on FEAST/FAINT tile`;
-  setTimeout(()=>doBattle(seed), 500);
+function doBattle(owner, seed){
+  phase='battle';
+  info.textContent=`BATTLE! ${owner.toUpperCase()} ${seed} reached center`;
+  const result = rollDice(FEAST_FACES);
+  animateDice(document.getElementById('feastDice'), result);
+
+  setTimeout(()=>{
+    if(result === '+'){
+      feasted[owner]++;
+      beep(owner==='player'?700:200, 0.3);
+    } else {
+      beep(150, 0.3); // faint
+    }
+    // remove seed after battle
+    document.getElementById(`seed-${owner}-${seed}`).remove();
+    delete boardState[owner][seed];
+
+    updateTreasure();
+    checkGameOver();
+
+    turn = turn==='player'?'cpu':'player';
+    phase='seed';
+    info.textContent=`${turn.toUpperCase()} TURN - Roll Seed Selector`;
+  }, 1000);
 }
 
-let battleRolls = [];
-function doBattle(seed){
-  if(battleRolls.length < 3){
-    const roller = battleRolls.length < 2? battleOwner : (battleOwner==='player'?'cpu':'player');
-    const result = rollDice(FEAST_FACES);
-    animateDice(document.getElementById('feastDice'), result);
-    battleRolls.push({roller, result});
-    setTimeout(()=>doBattle(seed), 800);
-  } else {
-    resolveBattle(seed);
+function checkGameOver(){
+  if(Object.keys(boardState.player).length === 0 && Object.keys(boardState.cpu).length === 0){
+    gameOver=true;
+    const winner = feasted.player > feasted.cpu? 'YOU WIN!' : feasted.cpu > feasted.player? 'CPU WINS!' : 'DRAW!';
+    info.textContent = `GAME OVER - ${winner}`;
+    rollBtn.disabled=true;
   }
 }
 
-function resolveBattle(seed){
-  const winner = battleRolls.find(r => r.result === '+');
-  const loser = battleRolls.find(r => r.result === '-');
-  let whoWon;
-  if(winner) whoWon = winner.roller;
-  else whoWon = 'cpu'; // default if all draws, shouldn't happen
-
-  feasted[whoWon]++;
-  updateTreasure();
-  beep(whoWon==='player'?700:200, 0.3);
-
-  // remove seed
-  document.getElementById(`seed-${seed}`).remove();
-  delete boardState[seed];
-
-  battleRolls = []; phase='seed';
-  if(Object.keys(boardState).length === 0) endGame();
-  else { turn = turn==='player'?'cpu':'player'; info.textContent=`${turn.toUpperCase()} TURN - Roll Seed Selector`; }
-}
-
-function endGame(){
-  gameOver=true;
-  const winner = feasted.player > feasted.cpu? 'YOU WIN!' : feasted.cpu > feasted.player? 'CPU WINS!' : 'DRAW!';
-  info.textContent = `GAME OVER - ${winner}`;
-  rollBtn.disabled=true;
-}
-
 rollBtn.onclick = () => {
-  if(gameOver) return;
+  if(gameOver || phase==='battle') return;
+  const currentOwner = turn;
+
   if(phase==='seed'){
-    const seed = rollDice(SEEDS.filter(s=>boardState[s]!==undefined));
+    const availableSeeds = Object.keys(boardState[currentOwner]);
+    if(availableSeeds.length===0){
+      turn = turn==='player'?'cpu':'player';
+      info.textContent=`${turn.toUpperCase()} TURN - Roll Seed Selector`;
+      return;
+    }
+    const seed = rollDice(availableSeeds);
     animateDice(document.getElementById('seedDice'), seed);
     selectedSeed = seed; phase='move';
-    info.textContent=`Selected ${seed}. Now roll Movement`;
+    info.textContent=`${currentOwner.toUpperCase()} selected ${seed}. Now roll Movement`;
   }
   else if(phase==='move'){
     const move = rollDice(MOVE_FACES);
     animateDice(document.getElementById('moveDice'), move);
-    moveSeed(selectedSeed, move);
-    if(boardState[selectedSeed]===6) startBattle(selectedSeed);
-    else { phase='seed'; turn=turn==='player'?'cpu':'player'; info.textContent=`${turn.toUpperCase()} TURN - Roll Seed Selector`; }
+    moveSeed(currentOwner, selectedSeed, move);
+
+    if(boardState[currentOwner][selectedSeed]!== Math.floor(BOARD_SIZE/2)){
+      phase='seed';
+      setTimeout(()=>{
+        turn = turn==='player'?'cpu':'player';
+        info.textContent=`${turn.toUpperCase()} TURN - Roll Seed Selector`;
+      }, 1000);
+    }
   }
 };
 
@@ -213,9 +243,9 @@ rollBtn.onclick = () => {
 setInterval(()=>{
   if(turn==='cpu' &&!gameOver && phase==='seed'){
     rollBtn.click();
-    setTimeout(()=>{ if(phase==='move') rollBtn.click(); }, 1000);
+    setTimeout(()=>{ if(phase==='move') rollBtn.click(); }, 1200);
   }
-}, 2000);
+}, 2500);
 
 updateTreasure();
 </script>
