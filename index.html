@@ -1,204 +1,227 @@
-
-*FEAST OR FAINT - HTML GAME*
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FEAST OR FAINT - Life's Philosophy</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>FEAST OR FAINT V2</title>
 <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Arial', sans-serif; }
-    body {
-        background: linear-gradient(135deg, #1a1a2e, #16213e);
-        color: white;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-        padding: 10px;
-    }
-    #game {
-        width: 100%;
-        max-width: 450px;
-        background: #0f0f1a;
-        border-radius: 20px;
-        padding: 15px;
-        box-shadow: 0 0 20px rgba(255,215,0,0.2);
-    }
-    h1 { text-align: center; color: gold; font-size: 1.5em; margin-bottom: 5px; }
-   .subtitle { text-align: center; font-size: 0.8em; color: #aaa; margin-bottom: 10px; }
+    * { margin:0; padding:0; box-sizing:border-box; touch-action:manipulation; }
+  body {
+    font-family: 'Arial Black', sans-serif;
+    background: linear-gradient(180deg, #2c1a0f 0%, #1a0f08 100%);
+    color: white; overflow: hidden; height: 100vh;
+  }
+  #game { display:flex; flex-direction:column; height:100vh; padding:8px; gap:6px; }
 
-    #menu, #board { display: none; }
-    #menu.active, #board.active { display: block; }
+  /* TREASURE BOXES */
+ .treasure-row { display:flex; justify-content:space-between; gap:8px; }
+ .treasure {
+    flex:1; padding:8px; border-radius:12px; text-align:center;
+    border:3px solid; font-size:12px; font-weight:bold;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  }
+  #playerBox { background: linear-gradient(135deg, #FFD700, #FFF8DC); color:#000; border-color:#FFD700; }
+  #cpuBox { background: linear-gradient(135deg, #C0C0C0, #2F2F2F); color:#FFF; border-color:#C0C0C0; }
+ .treasure.count { font-size:20px; margin-top:2px; }
 
-   .btn {
-        width: 100%; padding: 15px; margin: 8px 0; border: none; border-radius: 10px;
-        background: linear-gradient(90deg, #FFD700, #FFA500); color: #000; font-weight: bold;
-        font-size: 1em; cursor: pointer; transition: 0.2s;
-    }
-   .btn:hover { transform: scale(1.03); }
-   .btn-secondary { background: #333; color: white; }
+  /* BOARD */
+  #board { flex:1; display:flex; flex-direction:column; gap:4px; }
+ .row { display:flex; gap:4px; align-items:center; }
+ .label { width:40px; font-size:14px; text-align:center; font-weight:bold; color:#FFD700; }
+ .tile {
+    flex:1; aspect-ratio:1; border-radius:6px;
+    background:#8B4513; border:2px solid #5a2e0c;
+    display:flex; align-items:center; justify-content:center;
+    position:relative;
+  }
+ .tile.feastfaint {
+    background: linear-gradient(90deg, #00FF00 50%, #FF0000 50%);
+    border:3px solid #FFD700;
+  }
+ .seed {
+    width:70%; height:70%; border-radius:50%;
+    background: radial-gradient(circle at 30% 30%, #FFA500, #FF4500);
+    border:2px solid #000; box-shadow: inset 0 -3px 5px rgba(0,0,0,0.4);
+    position:absolute; transition: all 0.4s ease;
+  }
 
-    #stats { display: flex; justify-content: space-between; margin: 10px 0; font-size: 0.9em; }
-    #timer { color: #ff5555; font-weight: bold; }
+  /* DICE AREA */
+  #diceArea { display:flex; justify-content:space-around; padding:8px 0; gap:6px; }
+ .dice {
+    width:70px; height:70px; background:white; color:#000; border-radius:12px;
+    display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:bold;
+    border:3px solid #444; cursor:pointer; box-shadow:0 4px 8px rgba(0,0,0,0.6);
+    transition: transform 0.6s;
+  }
+ .dice.rolling { animation: roll 0.6s; }
+  @keyframes roll { 0%{transform:rotate(0)} 100%{transform:rotate(720deg)} }
 
-    #grid {
-        display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px;
-        background: #222; padding: 10px; border-radius: 10px; margin: 10px 0;
-    }
-   .tile {
-        aspect-ratio: 1; display: flex; justify-content: center; align-items: center;
-        border-radius: 8px; font-size: 1.5em; background: #333;
-    }
-   .tile.player { background: #00aaff; border: 2px solid white; }
-   .tile.treasure { background: #FFD700; }
-   .tile.waste { background: #555; }
-
-    #rollBtn { background: linear-gradient(90deg, #00ff88, #00cc66); font-size: 1.2em; }
-    #result { text-align: center; margin: 10px 0; min-height: 40px; font-weight: bold; }
+  #info { text-align:center; font-size:14px; padding:4px; background:rgba(0,0,0,0.4); border-radius:8px; }
+  #rollBtn {
+    width:100%; padding:12px; font-size:18px; font-weight:bold;
+    background:#FF4500; color:white; border:none; border-radius:12px; cursor:pointer;
+  }
+  #rollBtn:disabled { background:#555; }
 </style>
 </head>
 <body>
 <div id="game">
-    <h1>FEAST OR FAINT</h1>
-    <p class="subtitle">Life's Philosophy</p>
+  <div class="treasure-row">
+    <div class="treasure" id="playerBox">YOUR BOX<br><div class="count">0</div></div>
+    <div class="treasure" id="cpuBox">CPU BOX<br><div class="count">0</div></div>
+  </div>
 
-    <!-- MENU -->
-    <div id="menu" class="active">
-        <button class="btn" onclick="startGame('timer')">5-MINUTE TIMER</button>
-        <button class="btn" onclick="startGame('points')">RACE TO 100 POINTS</button>
-    </div>
+  <div id="board"></div>
 
-    <!-- GAME BOARD -->
-    <div id="board">
-        <div id="stats">
-            <div>Score: <span id="score">0</span></div>
-            <div id="timerBox">Time: <span id="timer">5:00</span></div>
-        </div>
+  <div id="info">Roll Seed Selector to start</div>
+  <button id="rollBtn">ROLL</button>
 
-        <div id="grid"></div>
-
-        <div id="result">Tap ROLL to begin!</div>
-        <button id="rollBtn" class="btn" onclick="rollDice()">ROLL DICE</button>
-        <button class="btn btn-secondary" onclick="goToMenu()">MENU</button>
-    </div>
+  <div id="diceArea">
+    <div class="dice" id="seedDice">A1</div>
+    <div class="dice" id="moveDice">1</div>
+    <div class="dice" id="feastDice">+</div>
+  </div>
 </div>
 
+<!-- Simple sounds using WebAudio -->
 <script>
-let position = 0;
-let score = 0;
-let gameMode = '';
-let timeLeft = 300; // 5 minutes in seconds
-let timerInterval;
-let tiles = [];
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function beep(f, t=0.1){ const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.frequency.value=f; o.connect(g); g.connect(audioCtx.destination); g.gain.setValueAtTime(0.2, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + t); o.start(); o.stop(audioCtx.currentTime + t); }
 
-const grid = document.getElementById('grid');
-const scoreEl = document.getElementById('score');
-const timerEl = document.getElementById('timer');
-const resultEl = document.getElementById('result');
+const SEEDS = ['A1','A2','B3','C4','D5','E6'];
+const MOVE_FACES = [1,1,2,2,3,'X'];
+const FEAST_FACES = ['+','+','+','-','-','-'];
 
-// Create 30 tiles
-function createBoard() {
-    grid.innerHTML = '';
-    tiles = [];
-    for(let i = 0; i < 30; i++) {
-        const tile = document.createElement('div');
-        tile.classList.add('tile');
-        // Randomly set treasure or waste
-        if(Math.random() < 0.3) {
-            tile.classList.add('treasure');
-            tile.innerText = '💎';
-            tile.dataset.type = 'treasure';
-        } else if(Math.random() < 0.5) {
-            tile.classList.add('waste');
-            tile.innerText = '🗑️';
-            tile.dataset.type = 'waste';
-        } else {
-            tile.dataset.type = 'normal';
-        }
-        grid.appendChild(tile);
-        tiles.push(tile);
+let boardState = {}; // {A1:0, A2:0...} position 0-6
+let feasted = {player:0, cpu:0};
+let gameOver = false;
+let turn = 'player'; // player or cpu
+let phase = 'seed'; // seed, move, battle
+let selectedSeed = null;
+let battleOwner = null;
+
+const board = document.getElementById('board');
+const info = document.getElementById('info');
+const rollBtn = document.getElementById('rollBtn');
+
+// BUILD BOARD
+SEEDS.forEach(seed => {
+  boardState[seed] = 0;
+  const row = document.createElement('div'); row.className='row';
+  const label = document.createElement('div'); label.className='label'; label.textContent=seed;
+  row.appendChild(label);
+  for(let i=0; i<7; i++){
+    const tile = document.createElement('div'); tile.className='tile'; tile.id=`${seed}-${i}`;
+    if(i===6) tile.classList.add('feastfaint');
+    if(i===0){
+      const s = document.createElement('div'); s.className='seed'; s.id=`seed-${seed}`;
+      tile.appendChild(s);
     }
-    updatePlayer();
+    row.appendChild(tile);
+  }
+  board.appendChild(row);
+});
+
+function updateTreasure(){
+  document.querySelector('#playerBox.count').textContent = feasted.player;
+  document.querySelector('#cpuBox.count').textContent = feasted.cpu;
 }
 
-function updatePlayer() {
-    tiles.forEach(t => t.classList.remove('player'));
-    tiles[position].classList.add('player');
+function rollDice(faces){
+  return faces[Math.floor(Math.random()*faces.length)];
 }
 
-function startGame(mode) {
-    gameMode = mode;
-    position = 0;
-    score = 0;
-    timeLeft = 300;
-    createBoard();
-    document.getElementById('menu').classList.remove('active');
-    document.getElementById('board').classList.add('active');
-    resultEl.innerText = "Game Started! Good luck!";
-    scoreEl.innerText = score;
-
-    if(gameMode === 'timer') {
-        document.getElementById('timerBox').style.display = 'block';
-        timerInterval = setInterval(updateTimer, 1000);
-    } else {
-        document.getElementById('timerBox').style.display = 'none';
-    }
+function animateDice(el, result){
+  el.classList.add('rolling');
+  beep(300);
+  setTimeout(()=>{ el.textContent = result; el.classList.remove('rolling'); }, 600);
 }
 
-function updateTimer() {
-    timeLeft--;
-    let min = Math.floor(timeLeft / 60);
-    let sec = timeLeft % 60;
-    timerEl.innerText = `${min}:${sec.toString().padStart(2,'0')}`;
-    if(timeLeft <= 0) endGame("Time's up!");
+function moveSeed(seed, steps){
+  if(steps==='X') return;
+  boardState[seed] += steps;
+  if(boardState[seed] > 6) boardState[seed] = 6;
+  const tile = document.getElementById(`${seed}-${boardState[seed]}`);
+  const seedEl = document.getElementById(`seed-${seed}`);
+  tile.appendChild(seedEl);
+  beep(500, 0.05);
 }
 
-function rollDice() {
-    let roll = Math.floor(Math.random() * 6) + 1;
-    position += roll;
-    if(position >= 30) position = position % 30; // Loop board
-
-    let tile = tiles[position];
-    let msg = `You rolled a ${roll}! `;
-
-    if(tile.dataset.type === 'treasure') {
-        score += 10;
-        msg += "FEAST! +10 Points 💎";
-    } else if(tile.dataset.type === 'waste') {
-        score -= 5;
-        if(score < 0) score = 0;
-        msg += "FAINT! -5 Points 🗑️";
-    } else {
-        msg += "Safe tile.";
-    }
-
-    resultEl.innerText = msg;
-    scoreEl.innerText = score;
-    updatePlayer();
-
-    if(gameMode === 'points' && score >= 100) endGame("You won! 100 Points!");
+function startBattle(seed){
+  phase='battle'; battleOwner=turn; info.textContent=`BATTLE! ${seed} on FEAST/FAINT tile`;
+  setTimeout(()=>doBattle(seed), 500);
 }
 
-function endGame(reason) {
-    clearInterval(timerInterval);
-    resultEl.innerText = `${reason} Final Score: ${score}`;
-    document.getElementById('rollBtn').disabled = true;
-    setTimeout(() => {
-        alert(`GAME OVER\n${reason}\nFinal Score: ${score}`);
-        goToMenu();
-    }, 500);
+let battleRolls = [];
+function doBattle(seed){
+  if(battleRolls.length < 3){
+    const roller = battleRolls.length < 2? battleOwner : (battleOwner==='player'?'cpu':'player');
+    const result = rollDice(FEAST_FACES);
+    animateDice(document.getElementById('feastDice'), result);
+    battleRolls.push({roller, result});
+    setTimeout(()=>doBattle(seed), 800);
+  } else {
+    resolveBattle(seed);
+  }
 }
 
-function goToMenu() {
-    clearInterval(timerInterval);
-    document.getElementById('board').classList.remove('active');
-    document.getElementById('menu').classList.add('active');
-    document.getElementById('rollBtn').disabled = false;
+function resolveBattle(seed){
+  const winner = battleRolls.find(r => r.result === '+');
+  const loser = battleRolls.find(r => r.result === '-');
+  let whoWon;
+  if(winner) whoWon = winner.roller;
+  else whoWon = 'cpu'; // default if all draws, shouldn't happen
+
+  feasted[whoWon]++;
+  updateTreasure();
+  beep(whoWon==='player'?700:200, 0.3);
+
+  // remove seed
+  document.getElementById(`seed-${seed}`).remove();
+  delete boardState[seed];
+
+  battleRolls = []; phase='seed';
+  if(Object.keys(boardState).length === 0) endGame();
+  else { turn = turn==='player'?'cpu':'player'; info.textContent=`${turn.toUpperCase()} TURN - Roll Seed Selector`; }
 }
+
+function endGame(){
+  gameOver=true;
+  const winner = feasted.player > feasted.cpu? 'YOU WIN!' : feasted.cpu > feasted.player? 'CPU WINS!' : 'DRAW!';
+  info.textContent = `GAME OVER - ${winner}`;
+  rollBtn.disabled=true;
+}
+
+rollBtn.onclick = () => {
+  if(gameOver) return;
+  if(phase==='seed'){
+    const seed = rollDice(SEEDS.filter(s=>boardState[s]!==undefined));
+    animateDice(document.getElementById('seedDice'), seed);
+    selectedSeed = seed; phase='move';
+    info.textContent=`Selected ${seed}. Now roll Movement`;
+  }
+  else if(phase==='move'){
+    const move = rollDice(MOVE_FACES);
+    animateDice(document.getElementById('moveDice'), move);
+    moveSeed(selectedSeed, move);
+    if(boardState[selectedSeed]===6) startBattle(selectedSeed);
+    else { phase='seed'; turn=turn==='player'?'cpu':'player'; info.textContent=`${turn.toUpperCase()} TURN - Roll Seed Selector`; }
+  }
+};
+
+// CPU auto-play
+setInterval(()=>{
+  if(turn==='cpu' &&!gameOver && phase==='seed'){
+    rollBtn.click();
+    setTimeout(()=>{ if(phase==='move') rollBtn.click(); }, 1000);
+  }
+}, 2000);
+
+updateTreasure();
 </script>
 </body>
 </html>
+
 
 
  
