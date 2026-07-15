@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -139,5 +138,115 @@ SEEDS.forEach(seed => {
 });
 
 function updateTreasure(){
-  document.querySelector('#playerBox.count').text
-   
+  document.querySelector('#playerBox.count').textContent = feasted.player; // FIXED space
+  document.querySelector('#cpuBox.count').textContent = feasted.cpu; // FIXED space
+}
+function rollDice(faces){ return faces[Math.floor(Math.random()*faces.length)]; }
+
+function animateDice(el, result){
+  el.classList.add('rolling');
+  beep(300);
+  setTimeout(()=>{ el.textContent = result; el.classList.remove('rolling'); }, 600);
+}
+
+function setActiveDice(dice, enabled=true){
+  [seedDice, moveDice].forEach(d => {
+    d.classList.remove('active', 'disabled');
+    if(!enabled) d.classList.add('disabled');
+  });
+  if(dice && enabled) dice.classList.add('active');
+}
+
+function moveSeed(owner, seed, steps){
+  if(steps==='X') return nextTurnWithDelay();
+  if(owner==='player') boardState.player[seed] -= steps;
+  else boardState.cpu[seed] += steps;
+
+  boardState.player[seed] = Math.max(CENTER_ROW, boardState.player[seed]);
+  boardState.cpu[seed] = Math.min(CENTER_ROW, boardState.cpu[seed]);
+
+  const pos = boardState[owner][seed];
+  const tile = document.getElementById(`${seed}-${pos}`);
+  const seedEl = document.getElementById(`seed-${owner}-${seed}`);
+  if(tile && seedEl) tile.appendChild(seedEl);
+  beep(500, 0.05);
+
+  if(pos === CENTER_ROW) doBattle(owner, seed);
+  else nextTurnWithDelay();
+}
+
+function doBattle(owner, seed){
+  phase='battle';
+  setActiveDice(null, false);
+  info.textContent=`BATTLE! ${owner.toUpperCase()} ${seed} reached center`;
+  const result = rollDice(FEAST_FACES);
+  animateDice(feastDice, result);
+
+  setTimeout(()=>{
+    if(result === '+'){
+      feasted[owner]++;
+      beep(owner==='player'?700:200, 0.3);
+    } else { beep(150, 0.3); }
+    document.getElementById(`seed-${owner}-${seed}`)?.remove();
+    delete boardState[owner][seed]; // FIXED
+    updateTreasure();
+    checkGameOver();
+    nextTurnWithDelay();
+  }, 1000);
+}
+
+function checkGameOver(){
+  if(Object.keys(boardState.player).length === 0 && Object.keys(boardState.cpu).length === 0){
+    gameOver=true;
+    const winner = feasted.player > feasted.cpu? 'YOU WIN!' : feasted.cpu > feasted.player? 'CPU WINS!' : 'DRAW!';
+    info.textContent = `GAME OVER - ${winner}`;
+  }
+}
+
+function nextTurnWithDelay(){
+  clearTimeout(turnTimer);
+  phase='seed';
+  turn = turn==='player'?'cpu':'player';
+
+  info.textContent = `${turn.toUpperCase()}'S TURN IN 4s...`;
+  setActiveDice(null, false);
+
+  turnTimer = setTimeout(()=>{
+    info.textContent=`${turn.toUpperCase()} TURN - Tap Seed Dice`;
+    setActiveDice(seedDice, true);
+    if(turn==='cpu') cpuTurn();
+  }, TURN_DELAY);
+}
+
+function cpuTurn(){
+  if(gameOver || turn!=='cpu') return;
+  setTimeout(()=>seedDice.click(), 500);
+  setTimeout(()=>{ if(phase==='move') moveDice.click(); }, 1500);
+}
+
+// PHYSICAL DICE CLICKS
+seedDice.onclick = () => {
+  if(gameOver || turn!=='player' || phase!=='seed') return;
+  const availableSeeds = Object.keys(boardState[turn]);
+  if(availableSeeds.length===0){ nextTurnWithDelay(); return; }
+  const seed = rollDice(availableSeeds);
+  animateDice(seedDice, seed);
+  selectedSeed = seed; phase='move';
+  info.textContent=`${turn.toUpperCase()} selected ${seed}. Tap Move Dice`;
+  setActiveDice(moveDice, true);
+}
+
+moveDice.onclick = () => {
+  if(gameOver || turn!=='player' || phase!=='move') return;
+  setActiveDice(null, false);
+  const move = rollDice(MOVE_FACES);
+  animateDice(moveDice, move);
+  moveSeed(turn, selectedSeed, move);
+}
+
+// Start game
+setActiveDice(seedDice, true);
+updateTreasure();
+</script>
+</body>
+</html>
