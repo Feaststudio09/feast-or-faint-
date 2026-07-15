@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>FEAST OR FAINT V5.1 - 4S TURNS</title>
+<title>FEAST OR FAINT V5.2 - FIXED</title>
 <style>
     * { margin:0; padding:0; box-sizing:border-box; touch-action:manipulation; }
   body {
@@ -77,7 +78,66 @@
   <div id="board"></div>
   <div id="info">Tap Seed Dice to start</div>
 
-  <div
+  <div id="diceArea">
+    <div class="dice" id="seedDice">A1</div>
+    <div class="dice" id="moveDice">1</div>
+    <div class="dice" id="feastDice">+</div>
+  </div>
+</div>
 
+<script>
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function beep(f, t=0.1){ const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.frequency.value=f; o.connect(g); g.connect(audioCtx.destination); g.gain.setValueAtTime(0.2, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + t); o.start(); o.stop(audioCtx.currentTime + t); }
 
+const SEEDS = ['A1','A2','B3','C4','D5','E6'];
+const MOVE_FACES = [1,1,2,2,3,'X'];
+const FEAST_FACES = ['+','+','+','-','-','-'];
+const TOTAL_ROWS = 14;
+const CENTER_ROW = 7;
+const TURN_DELAY = 4000; // 4 seconds
+
+let boardState = {player:{}, cpu:{}}; // FIXED: now objects per seed
+let feasted = {player:0, cpu:0};
+let gameOver = false;
+let turn = 'player';
+let phase = 'seed';
+let selectedSeed = null;
+let turnTimer = null;
+
+const board = document.getElementById('board');
+const info = document.getElementById('info');
+const seedDice = document.getElementById('seedDice');
+const moveDice = document.getElementById('moveDice');
+const feastDice = document.getElementById('feastDice');
+
+// INIT BOARD STATE - FIXED
+SEEDS.forEach(seed => {
+  boardState.player[seed] = TOTAL_ROWS; // Player starts at row 14
+  boardState.cpu[seed] = 1; // CPU starts at row 1
+});
+
+// BUILD BOARD
+SEEDS.forEach(seed => {
+  const row = document.createElement('div'); row.className='row';
+  const label = document.createElement('div'); label.className='label'; label.textContent=seed;
+  row.appendChild(label);
+  for(let i=1; i<=TOTAL_ROWS; i++){
+    const tile = document.createElement('div');
+    tile.className='tile'; tile.id=`${seed}-${i}`;
+    if(i === CENTER_ROW) tile.classList.add('battleline');
+    if(i === 1){
+      const s = document.createElement('div'); s.className='seed cpu'; s.id=`seed-cpu-${seed}`;
+      tile.appendChild(s);
+    }
+    if(i === TOTAL_ROWS){
+      const s = document.createElement('div'); s.className='seed player'; s.id=`seed-player-${seed}`;
+      tile.appendChild(s);
+    }
+    row.appendChild(tile);
+  }
+  board.appendChild(row);
+});
+
+function updateTreasure(){
+  document.querySelector('#playerBox.count').text
    
