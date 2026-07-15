@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>FEAST OR FAINT V5.2 - FIXED</title>
+<title>FEAST OR FAINT V5.4 - 70% BOARD</title>
 <style>
     * { margin:0; padding:0; box-sizing:border-box; touch-action:manipulation; }
   body {
@@ -11,76 +11,89 @@
     background: linear-gradient(180deg, #2c1a0f 0%, #1a0f08 100%);
     color: white; overflow: hidden; height: 100vh;
   }
-  #game { display:flex; flex-direction:column; height:100vh; padding:6px; gap:4px; }
+  #game { display:flex; flex-direction:column; height:100vh; padding:4px; gap:3px; }
 
-  /* TREASURE BOXES */
-.treasure-row { display:flex; justify-content:space-between; gap:8px; }
+  /* TREASURE BOXES - VERTICAL */
+.treasure-column { display:flex; flex-direction:column; }
 .treasure {
-    flex:1; padding:6px; border-radius:10px; text-align:center;
-    border:3px solid; font-size:11px; font-weight:bold;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    width:100%; padding:6px 10px; border-radius:8px; text-align:center;
+    border:2px solid; font-size:11px; font-weight:bold;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.5);
+    display:flex; justify-content:space-between; align-items:center;
   }
   #cpuBox { background: linear-gradient(135deg, #C0C0C0, #2F2F2F); color:#FFF; border-color:#C0C0C0; }
   #playerBox { background: linear-gradient(135deg, #FFD700, #FFF8DC); color:#000; border-color:#FFD700; }
-.treasure.count { font-size:18px; margin-top:1px; }
+.treasure.count { font-size:16px; }
 
-  /* BOARD */
-  #board { flex:1; display:flex; flex-direction:column; gap:2px; overflow-y:auto; }
-.row { display:flex; gap:3px; align-items:center; }
-.label { width:30px; font-size:11px; text-align:center; font-weight:bold; color:#FFD700; }
+  /* BOARD - NOW 70% OF SCREEN */
+  #board { 
+    height: 70vh; /* KEY: 70% of screen height */
+    display:flex; flex-direction:column; gap:1px; overflow-y:auto; 
+    padding:2px 0;
+  }
+.row { display:flex; gap:2px; align-items:center; }
+.label { width:26px; font-size:10px; text-align:center; font-weight:bold; color:#FFD700; }
 .tile {
-    flex:1; aspect-ratio:1; border-radius:5px;
+    flex:1; aspect-ratio:1; border-radius:4px;
     background:#8B4513; border:1px solid #5a2e0c;
     display:flex; align-items:center; justify-content:center;
     position:relative;
   }
 .tile.battleline {
     background: linear-gradient(180deg, #00FF00 50%, #FF0000 50%);
-    border:3px solid #FFD700; box-shadow: 0 0 8px #FFD700;
+    border:2px solid #FFD700; box-shadow: 0 0 6px #FFD700;
   }
 .seed {
-    width:65%; height:65%; border-radius:50%;
-    border:2px solid #000; box-shadow: inset 0 -2px 4px rgba(0,0,0,0.4);
-    position:absolute; transition: all 0.4s ease;
+    width:60%; height:60%; border-radius:50%;
+    border:1px solid #000; box-shadow: inset 0 -1px 3px rgba(0,0,0,0.4);
+    position:absolute; transition: all 0.3s ease;
   }
 .seed.player { background: radial-gradient(circle at 30% 30%, #FFA500, #FF4500); }
 .seed.cpu { background: radial-gradient(circle at 30% 30%, #87CEEB, #1E90FF); }
 
-  /* DICE AREA */
-  #diceArea { display:flex; justify-content:space-around; padding:4px 0; gap:4px; }
+  /* DICE AREA - PULLED CLOSER */
+  #diceArea { display:flex; justify-content:space-around; padding:2px 0; gap:3px; margin-top:0; }
 .dice {
-    width:60px; height:60px; background:white; color:#000; border-radius:12px;
-    display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:bold;
-    border:3px solid #444; cursor:pointer; box-shadow:0 4px 8px rgba(0,0,0,0.6);
+    width:50px; height:50px; background:white; color:#000; border-radius:10px;
+    display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:bold;
+    border:2px solid #444; cursor:pointer; box-shadow:0 3px 5px rgba(0,0,0,0.6);
     transition: all 0.3s ease; user-select:none;
   }
 .dice:active { transform: scale(0.9); }
 .dice.rolling { animation: roll 0.6s; }
 .dice.active {
     border-color:#FFD700;
-    box-shadow:0 0 15px #FFD700;
+    box-shadow:0 0 10px #FFD700;
     transform: scale(1.05);
   }
 .dice.disabled { opacity:0.4; cursor:not-allowed; }
   @keyframes roll { 0%{transform:rotate(0)} 100%{transform:rotate(720deg)} }
 
-  #info { text-align:center; font-size:12px; padding:4px; background:rgba(0,0,0,0.4); border-radius:6px; }
+  #info { text-align:center; font-size:11px; padding:2px; background:rgba(0,0,0,0.4); border-radius:5px; margin-bottom:1px; }
 </style>
 </head>
 <body>
 <div id="game">
-  <div class="treasure-row">
-    <div class="treasure" id="cpuBox">CPU BOX<br><div class="count">0</div></div>
-    <div class="treasure" id="playerBox">YOUR BOX<br><div class="count">0</div></div>
+  <!-- CPU BOX ON TOP -->
+  <div class="treasure-column">
+    <div class="treasure" id="cpuBox"><span>CPU BOX</span><span class="count">0</span></div>
   </div>
 
+  <!-- SHARED BOARD: 70% HEIGHT -->
   <div id="board"></div>
+
   <div id="info">Tap Seed Dice to start</div>
 
+  <!-- DICE NOW DIRECTLY UNDER BOARD -->
   <div id="diceArea">
     <div class="dice" id="seedDice">A1</div>
     <div class="dice" id="moveDice">1</div>
     <div class="dice" id="feastDice">+</div>
+  </div>
+
+  <!-- PLAYER BOX ON BOTTOM -->
+  <div class="treasure-column">
+    <div class="treasure" id="playerBox"><span>YOUR BOX</span><span class="count">0</span></div>
   </div>
 </div>
 
@@ -93,9 +106,9 @@ const MOVE_FACES = [1,1,2,2,3,'X'];
 const FEAST_FACES = ['+','+','+','-','-','-'];
 const TOTAL_ROWS = 14;
 const CENTER_ROW = 7;
-const TURN_DELAY = 4000; // 4 seconds
+const TURN_DELAY = 4000;
 
-let boardState = {player:{}, cpu:{}}; // FIXED: now objects per seed
+let boardState = {player:{}, cpu:{}};
 let feasted = {player:0, cpu:0};
 let gameOver = false;
 let turn = 'player';
@@ -109,10 +122,10 @@ const seedDice = document.getElementById('seedDice');
 const moveDice = document.getElementById('moveDice');
 const feastDice = document.getElementById('feastDice');
 
-// INIT BOARD STATE - FIXED
+// INIT BOARD STATE
 SEEDS.forEach(seed => {
-  boardState.player[seed] = TOTAL_ROWS; // Player starts at row 14
-  boardState.cpu[seed] = 1; // CPU starts at row 1
+  boardState.player = TOTAL_ROWS;
+  boardState.cpu = 1;
 });
 
 // BUILD BOARD
@@ -138,8 +151,8 @@ SEEDS.forEach(seed => {
 });
 
 function updateTreasure(){
-  document.querySelector('#playerBox.count').textContent = feasted.player; // FIXED space
-  document.querySelector('#cpuBox.count').textContent = feasted.cpu; // FIXED space
+  document.querySelector('#playerBox.count').textContent = feasted.player;
+  document.querySelector('#cpuBox.count').textContent = feasted.cpu;
 }
 function rollDice(faces){ return faces[Math.floor(Math.random()*faces.length)]; }
 
@@ -153,100 +166,4 @@ function setActiveDice(dice, enabled=true){
   [seedDice, moveDice].forEach(d => {
     d.classList.remove('active', 'disabled');
     if(!enabled) d.classList.add('disabled');
-  });
-  if(dice && enabled) dice.classList.add('active');
-}
-
-function moveSeed(owner, seed, steps){
-  if(steps==='X') return nextTurnWithDelay();
-  if(owner==='player') boardState.player[seed] -= steps;
-  else boardState.cpu[seed] += steps;
-
-  boardState.player[seed] = Math.max(CENTER_ROW, boardState.player[seed]);
-  boardState.cpu[seed] = Math.min(CENTER_ROW, boardState.cpu[seed]);
-
-  const pos = boardState[owner][seed];
-  const tile = document.getElementById(`${seed}-${pos}`);
-  const seedEl = document.getElementById(`seed-${owner}-${seed}`);
-  if(tile && seedEl) tile.appendChild(seedEl);
-  beep(500, 0.05);
-
-  if(pos === CENTER_ROW) doBattle(owner, seed);
-  else nextTurnWithDelay();
-}
-
-function doBattle(owner, seed){
-  phase='battle';
-  setActiveDice(null, false);
-  info.textContent=`BATTLE! ${owner.toUpperCase()} ${seed} reached center`;
-  const result = rollDice(FEAST_FACES);
-  animateDice(feastDice, result);
-
-  setTimeout(()=>{
-    if(result === '+'){
-      feasted[owner]++;
-      beep(owner==='player'?700:200, 0.3);
-    } else { beep(150, 0.3); }
-    document.getElementById(`seed-${owner}-${seed}`)?.remove();
-    delete boardState[owner][seed]; // FIXED
-    updateTreasure();
-    checkGameOver();
-    nextTurnWithDelay();
-  }, 1000);
-}
-
-function checkGameOver(){
-  if(Object.keys(boardState.player).length === 0 && Object.keys(boardState.cpu).length === 0){
-    gameOver=true;
-    const winner = feasted.player > feasted.cpu? 'YOU WIN!' : feasted.cpu > feasted.player? 'CPU WINS!' : 'DRAW!';
-    info.textContent = `GAME OVER - ${winner}`;
-  }
-}
-
-function nextTurnWithDelay(){
-  clearTimeout(turnTimer);
-  phase='seed';
-  turn = turn==='player'?'cpu':'player';
-
-  info.textContent = `${turn.toUpperCase()}'S TURN IN 4s...`;
-  setActiveDice(null, false);
-
-  turnTimer = setTimeout(()=>{
-    info.textContent=`${turn.toUpperCase()} TURN - Tap Seed Dice`;
-    setActiveDice(seedDice, true);
-    if(turn==='cpu') cpuTurn();
-  }, TURN_DELAY);
-}
-
-function cpuTurn(){
-  if(gameOver || turn!=='cpu') return;
-  setTimeout(()=>seedDice.click(), 500);
-  setTimeout(()=>{ if(phase==='move') moveDice.click(); }, 1500);
-}
-
-// PHYSICAL DICE CLICKS
-seedDice.onclick = () => {
-  if(gameOver || turn!=='player' || phase!=='seed') return;
-  const availableSeeds = Object.keys(boardState[turn]);
-  if(availableSeeds.length===0){ nextTurnWithDelay(); return; }
-  const seed = rollDice(availableSeeds);
-  animateDice(seedDice, seed);
-  selectedSeed = seed; phase='move';
-  info.textContent=`${turn.toUpperCase()} selected ${seed}. Tap Move Dice`;
-  setActiveDice(moveDice, true);
-}
-
-moveDice.onclick = () => {
-  if(gameOver || turn!=='player' || phase!=='move') return;
-  setActiveDice(null, false);
-  const move = rollDice(MOVE_FACES);
-  animateDice(moveDice, move);
-  moveSeed(turn, selectedSeed, move);
-}
-
-// Start game
-setActiveDice(seedDice, true);
-updateTreasure();
-</script>
-</body>
-</html>
+ 
