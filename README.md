@@ -1,5 +1,5 @@
 FEAST OR FAINT 🎲
-Life is a board. Will you FEAST or FAINT?
+Life lived like a GAME. Will you FEAST or FAINT?
 Roll the dice and move across 6 tiles. 
 Land on TREASURE 💎 = then Feast 
 or  Faint 🗑️ 
